@@ -1,0 +1,59 @@
+<?php
+function createRobotsTxt($baseUrl)
+{
+    $robotsTxt = "User-agent: *" . PHP_EOL;
+    $robotsTxt .= "Allow: /" . PHP_EOL;
+    $robotsTxt .= "Sitemap: " . $baseUrl . "sitemap.xml" . PHP_EOL;
+
+    if (file_put_contents('robots.txt', $robotsTxt) === false) {
+        throw new Exception("Gagal membuat robots.txt.");
+    }
+}
+
+function createSitemap($filename, $baseUrl)
+{
+    if (!file_exists($filename) || !is_readable($filename)) {
+        throw new Exception("File 'bonjur.txt' tidak ditemukan atau tidak bisa dibaca.");
+    }
+
+    $titles = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+    $sitemapContent = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
+    $sitemapContent .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
+
+    // Format tanggal dengan format "YYYY-MM-DD"
+    date_default_timezone_set('Asia/Jakarta');
+    $currentDate = date('Y-m-d');
+
+    foreach ($titles as $title) {
+        $encodedTitle = urlencode($title);
+        $urlWithId = $baseUrl . '?pejeb=' . $encodedTitle;
+
+        $sitemapContent .= '  <url>' . PHP_EOL;
+        $sitemapContent .= '    <loc>' . htmlspecialchars($urlWithId) . '</loc>' . PHP_EOL;
+        $sitemapContent .= '    <lastmod>' . $currentDate . '</lastmod>' . PHP_EOL;
+        $sitemapContent .= '    <changefreq>daily</changefreq>' . PHP_EOL;
+        $sitemapContent .= '  </url>' . PHP_EOL;
+    }
+
+    $sitemapContent .= '</urlset>';
+
+    if (file_put_contents('sitemap.xml', $sitemapContent) === false) {
+        throw new Exception("Gagal membuat sitemap.xml.");
+    }
+}
+
+// Mendapatkan URL dasar dari situs dengan HTTPS
+$baseUrl = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+// Menghapus bagian akhir URL "get-sitemap.php" atau nama file yang menjalankan kode ini
+$baseUrl = rtrim(str_replace(basename(__FILE__), '', $baseUrl), '/');
+
+try {
+    createRobotsTxt($baseUrl . '/');
+    createSitemap('bonjur.txt', $baseUrl . '/');
+    echo "Sitemap dan robots.txt berhasil dibuat!";
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage();
+}
+?>
